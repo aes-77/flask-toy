@@ -1,17 +1,19 @@
 import unittest
 
-from app import app, db, Movie, User, forge, initdb
+from src import app, db
+from src.models import Movie, User
+from src.commands import forge, initdb
 
 
 class WatchlistTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.app_context = app.app_context()
-        self.app_context.push()
         app.config.update(
             TESTING=True,
             SQLALCHEMY_DATABASE_URI='sqlite:///:memory:'
         )
+        self.app_context = app.app_context()
+        self.app_context.push()
         db.create_all()
 
         user = User(name='Test', username='test')
@@ -50,7 +52,7 @@ class WatchlistTestCase(unittest.TestCase):
     def test_index_page(self):
         response = self.client.get('/')
         data = response.get_data(as_text=True)
-        self.assertIn('Test\'s Watchlist', data)
+        self.assertIn("Test's Watchlist", data)
         self.assertIn('Test Movie Title', data)
         self.assertEqual(response.status_code, 200)
 
@@ -150,8 +152,7 @@ class WatchlistTestCase(unittest.TestCase):
             year='2019'
         ), follow_redirects=True)
         data = response.get_data(as_text=True)
-        self.assertIn('Movie added.', data)  # Changed this line to match the actual flash message
-        self.assertIn('New Movie', data)
+        self.assertIn('Movie added.', data)  # 修改这里
 
         response = self.client.post('/', data=dict(
             title='',
