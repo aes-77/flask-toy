@@ -2,9 +2,11 @@ import os
 import sys
 import click
 
-from flask import Flask, request, url_for, redirect, flash, render_template
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, login_user, login_required, logout_user, current_user, UserMixin
+from flask_login import LoginManager
+from flask_migrate import Migrate
+
 
 
 # 设置数据库 URI
@@ -15,14 +17,22 @@ else:  # 否则使用四个斜线
     prefix = 'sqlite:////'
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'dev'
-app.config['SQLALCHEMY_DATABASE_URI'] = prefix + os.path.join(os.path.dirname(app.root_path), 'data.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev')
+app.config['SQLALCHEMY_DATABASE_URI'] = prefix + os.path.join(os.path.dirname(app.root_path), os.getenv('DATABASE_FILE', 'data.db'))
+
+login_manager = LoginManager(app)  # 实例化扩展类
+login_manager.login_view = 'login'
 
 # 在扩展类实例化前加载配置
 db = SQLAlchemy(app)
-login_manager = LoginManager(app)  # 实例化扩展类
-login_manager.login_view = 'login'
+migrate = Migrate(app, db)
+
+from src import models
+
+@app.before_first_request
+def create_tables():
+    db.create_all()
 
 @login_manager.user_loader
 def load_user(user_id):  # 创建用户加载回调函数，接受用户 ID 作为参数
